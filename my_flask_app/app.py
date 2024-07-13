@@ -123,38 +123,38 @@ def method_ipul(df):
         # Bagi data menjadi training dan testing set
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Inisialisasi Count Vectorizer
-        count_vectorizer = CountVectorizer()
+        # Inisialisasi TF-IDF Vectorizer
+        tfidf_vectorizer = TfidfVectorizer()
 
-        X_train = count_vectorizer.fit_transform(X_train)
-        X_test = count_vectorizer.transform(X_test)
+        X_train = tfidf_vectorizer.fit_transform(X_train)
+        X_test = tfidf_vectorizer.transform(X_test)
 
         # Handling Imbalance dengan SMOTE
-        ros = RandomOverSampler(random_state=0)
-        X_train, y_train = ros.fit_resample(X_train, y_train)
+        smote = SMOTE(random_state=0)
+        X_train, y_train = smote.fit_resample(X_train, y_train)
 
         # Melatih model SVM
-        svm_model = SVC(C=10, gamma=0.01, kernel='rbf')
+        svm_model = SVC()
         svm_model.fit(X_train, y_train)
 
-        # Simpan objek Count ke dalam PKL
-        joblib.dump(count_vectorizer, 'count_vectorizer.pkl')
+        # Simpan objek TF-IDF ke dalam PKL
+        joblib.dump(tfidf_vectorizer, 'tfidf_ipul_vectorizer.pkl')
 
         # Simpan model SVM ke dalam PKL
-        joblib.dump(svm_model, 'sentiment_analysis_model.pkl')
+        joblib.dump(svm_model, 'sentiment_analysis_model_ipul.pkl')
 
         return label_encoder
     
     # Fungsi untuk melakukan prediksi pada dataset baru tanpa label
     def predict_new_data(new_data, label_encoder):
-        count_vectorizer = joblib.load('count_vectorizer.pkl')
-        svm_model = joblib.load('sentiment_analysis_model.pkl')
+        tfidf_vectorizer = joblib.load('tfidf_ipul_vectorizer.pkl')
+        svm_model = joblib.load('sentiment_analysis_model_ipul.pkl')
 
         # Preprocessing data baru
         new_data['Body'] = new_data['Body'].apply(preprocessing)
         
-        # Transformasi Count Vectorizer
-        transformed_data = count_vectorizer.transform(new_data['Body'])
+        # Transformasi TF-IDF Vectorizer
+        transformed_data = tfidf_vectorizer.transform(new_data['Body'])
 
         # Prediksi dengan model SVM
         predictions = svm_model.predict(transformed_data)
