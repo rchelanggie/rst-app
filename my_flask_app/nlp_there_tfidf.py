@@ -12,7 +12,10 @@ Original file is located at
 import pandas as pd
 
 # Masukkan URL yang dibagikan di sini
-url = 'https://drive.google.com/uc?id=1yOepW6tQ0SeetNguQFKFPuV5Qxrqs2wZ'
+# url = 'https://drive.google.com/uc?id=1yOepW6tQ0SeetNguQFKFPuV5Qxrqs2wZ'
+
+# ini rekap
+url = 'https://drive.google.com/uc?id=1e09AIZZBf7Ljt0BUJSUBEoQ9NgLX29Gz' 
 
 # Memuat dataset CSV ke dalam DataFrame
 df = pd.read_csv(url)

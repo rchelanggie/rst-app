@@ -27,59 +27,102 @@ api = Api(app)
     
 def method_there(df):
     def preprocessing(text):
+        # Case folding
         text = text.lower()
+
+        # Menghapus tanda baca
         text = text.translate(str.maketrans('', '', string.punctuation))
+
+        # Menghapus angka
         text = re.sub(r'\d+', '', text)
-        
-        stop_words = set(stopwords.words('english'))
+
+        # Tokenisasi
         word_tokens = word_tokenize(text)
+
+        # Hapus stopwords
+        stop_words = set(stopwords.words('english'))
         filtered_text = [word for word in word_tokens if word not in stop_words]
-        
+
+        # Stemming
         ps = PorterStemmer()
         stemmed_text = [ps.stem(word) for word in filtered_text]
-        
+
+        # Lemmatization (opsional)
         lemmatizer = WordNetLemmatizer()
         lemmatized_text = [lemmatizer.lemmatize(word) for word in stemmed_text]
-        
+
         return ' '.join(lemmatized_text)
 
-    if 'Sentiment' in df.columns:
-        df.dropna(subset=['Body'], inplace=True)
+    def preprocess_train_save_model(df):
+        # Preprocessing
         df['Body'] = df['Body'].apply(preprocessing)
 
-        vectorizer = TfidfVectorizer(max_features=5000)
-        X = vectorizer.fit_transform(df['Body'])
+        # Label Encoding
+        label_encoder = LabelEncoder()
+
+        # Fit dan transform kolom sentimen
+        df['Sentiment'] = label_encoder.fit_transform(df['Sentiment'])
+
+        # Pisahkan fitur dan label
+        X = df['Body']
         y = df['Sentiment']
 
+        # Bagi data menjadi training dan testing set
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        # Inisialisasi Count Vectorizer
+        count_vectorizer = TfidfVectorizer(max_features=5000)
+
+        X_train = count_vectorizer.fit_transform(X_train)
+        X_test = count_vectorizer.transform(X_test)
+
+        # Handling Imbalance dengan SMOTE
+        ros = RandomOverSampler(random_state=0)
+        X_train, y_train = ros.fit_resample(X_train, y_train)
+
+        # Melatih model SGD
         sgd_model = SGDClassifier(loss="hinge", penalty="l2", max_iter=1000)
         sgd_model.fit(X_train, y_train)
 
-        joblib.dump(vectorizer, 'tfidf_vectorizer_there.pkl')
+        # Simpan objek Count Vectorizer ke dalam PKL
+        joblib.dump(count_vectorizer, 'tfidf_vectorizer_there.pkl')
+
+        # Simpan model SGD ke dalam PKL
         joblib.dump(sgd_model, 'sgd_model_there.pkl')
-    else:
-        df['Body'] = df['Body'].apply(preprocessing)
 
-    def predict_new_data(new_data):
-        vectorizer = joblib.load('tfidf_vectorizer_there.pkl')
+        return label_encoder
+    
+    # Fungsi untuk melakukan prediksi pada dataset baru tanpa label
+    def predict_new_data(new_data, label_encoder):
+        count_vectorizer = joblib.load('tfidf_vectorizer_there.pkl')
         sgd_model = joblib.load('sgd_model_there.pkl')
-        
+
+        # Preprocessing data baru
         new_data['Body'] = new_data['Body'].apply(preprocessing)
-        transformed_data = vectorizer.transform(new_data['Body'])
-        predictions = sgd_model.predict(transformed_data)
         
-        new_data['Predicted_Sentiment'] = predictions
-        # if 'Quality' in new_data.columns:
-        sentiment_counts = new_data.groupby('Quality')['Predicted_Sentiment'].value_counts().unstack(fill_value=0)
+        # Transformasi Count Vectorizer
+        transformed_data = count_vectorizer.transform(new_data['Body'])
+
+        # Prediksi dengan model SGD
+        predictions = sgd_model.predict(transformed_data)
+
+        # Mengembalikan label prediksi ke dalam label asli
+        predicted_labels = label_encoder.inverse_transform(predictions)
+
+        predicted_df = new_data.copy()
+        predicted_df['Sentiment'] = predicted_labels
+        sentiment_counts = predicted_df.groupby('Quality')['Sentiment'].value_counts().unstack(fill_value=0)
+
         return sentiment_counts
-        # else:
-        #     return new_data[['Body', 'Predicted_Sentiment']]
+    
+    url = 'https://drive.google.com/uc?id=1P8qGzZi979_TbIxhGyzxWl9nzGRgFRhJ'
+    # Memuat dataset CSV ke dalam DataFrame
+    dataset = pd.read_csv(url)
+    # Preprocessing, training model, dan menyimpan ke dalam PKL
+    label_encoder = preprocess_train_save_model(dataset)
 
-    # if 'Sentiment' not in df.columns:
-    return predict_new_data(df)
-
-    # return df
+    sentiment_counts = predict_new_data(df, label_encoder)
+    return sentiment_counts
 
 def method_ipul(df):
     def preprocessing(text):
@@ -123,38 +166,38 @@ def method_ipul(df):
         # Bagi data menjadi training dan testing set
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Inisialisasi TF-IDF Vectorizer
-        tfidf_vectorizer = TfidfVectorizer()
+        # Inisialisasi Count Vectorizer
+        count_vectorizer = CountVectorizer()
 
-        X_train = tfidf_vectorizer.fit_transform(X_train)
-        X_test = tfidf_vectorizer.transform(X_test)
+        X_train = count_vectorizer.fit_transform(X_train)
+        X_test = count_vectorizer.transform(X_test)
 
         # Handling Imbalance dengan SMOTE
-        smote = SMOTE(random_state=0)
-        X_train, y_train = smote.fit_resample(X_train, y_train)
+        ros = RandomOverSampler(random_state=0)
+        X_train, y_train = ros.fit_resample(X_train, y_train)
 
         # Melatih model SVM
-        svm_model = SVC()
+        svm_model = SVC(C=10, gamma=0.01, kernel='rbf')
         svm_model.fit(X_train, y_train)
 
-        # Simpan objek TF-IDF ke dalam PKL
-        joblib.dump(tfidf_vectorizer, 'tfidf_ipul_vectorizer.pkl')
+        # Simpan objek Count ke dalam PKL
+        joblib.dump(count_vectorizer, 'count_vectorizer.pkl')
 
         # Simpan model SVM ke dalam PKL
-        joblib.dump(svm_model, 'sentiment_analysis_model_ipul.pkl')
+        joblib.dump(svm_model, 'sentiment_analysis_model.pkl')
 
         return label_encoder
     
     # Fungsi untuk melakukan prediksi pada dataset baru tanpa label
     def predict_new_data(new_data, label_encoder):
-        tfidf_vectorizer = joblib.load('tfidf_ipul_vectorizer.pkl')
-        svm_model = joblib.load('sentiment_analysis_model_ipul.pkl')
+        count_vectorizer = joblib.load('count_vectorizer.pkl')
+        svm_model = joblib.load('sentiment_analysis_model.pkl')
 
         # Preprocessing data baru
         new_data['Body'] = new_data['Body'].apply(preprocessing)
         
-        # Transformasi TF-IDF Vectorizer
-        transformed_data = tfidf_vectorizer.transform(new_data['Body'])
+        # Transformasi Count Vectorizer
+        transformed_data = count_vectorizer.transform(new_data['Body'])
 
         # Prediksi dengan model SVM
         predictions = svm_model.predict(transformed_data)
