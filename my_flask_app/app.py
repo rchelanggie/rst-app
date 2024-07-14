@@ -103,7 +103,7 @@ def method_ipul(df):
         lemmatizer = WordNetLemmatizer()
         lemmatized_text = [lemmatizer.lemmatize(word) for word in stemmed_text]
 
-        return ' '.join(lemmatized_text)
+        return ' '.join(stemmed_text)
 
     def preprocess_train_save_model(df):
         # Preprocessing
@@ -168,7 +168,7 @@ def method_ipul(df):
 
         return sentiment_counts
     
-    url = 'https://drive.google.com/uc?id=1P8qGzZi979_TbIxhGyzxWl9nzGRgFRhJ'
+    url = 'https://drive.google.com/uc?id=1vmt87QRaQuNUHbtDHbPplplnFZM-OYCG'
     # Memuat dataset CSV ke dalam DataFrame
     dataset = pd.read_csv(url)
     # Preprocessing, training model, dan menyimpan ke dalam PKL
