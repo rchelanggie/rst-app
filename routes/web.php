@@ -6,6 +6,7 @@ use App\Http\Controllers\InformasiController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\PenilaianController;
 use App\Http\Controllers\PerangkatLunakController;
+use App\Http\Controllers\FormReqController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,6 +27,8 @@ Route::get('/', function () {
 Route::get('/panduan', [PanduanController::class, 'index'])->name('panduan');
 
 Route::get('/informasi', [InformasiController::class, 'informasi'])->name('informasi');
+
+Route::get('/formreq', [FormReqController::class, 'formreq'])->name('formreq');
 
 Route::get('/create', [PerangkatLunakController::class, 'create'])->name('create-data');
 Route::post('/store', [PerangkatLunakController::class, 'store'])->name('store-data');
